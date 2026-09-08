@@ -1,0 +1,191 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  --primary: oklch(0.55 0.2 255);
+  --primary-foreground: oklch(0.99 0.005 255);
+  --sidebar-primary: oklch(0.5 0.19 255);
+  --sidebar-primary-foreground: oklch(0.99 0.005 255);
+  --chart-1: oklch(0.6 0.19 250);
+  --chart-2: oklch(0.68 0.16 220);
+  --chart-3: oklch(0.58 0.17 285);
+  --chart-4: oklch(0.72 0.14 200);
+  --chart-5: oklch(0.53 0.14 245);
+  --radius: 1rem;
+  --background: oklch(0.97 0.018 250);
+  --foreground: oklch(0.22 0.035 255);
+  --card: oklch(1 0 0 / 76%);
+  --card-foreground: oklch(0.22 0.035 255);
+  --popover: oklch(1 0 0 / 92%);
+  --popover-foreground: oklch(0.22 0.035 255);
+  --secondary: oklch(0.9 0.05 245);
+  --secondary-foreground: oklch(0.3 0.05 255);
+  --muted: oklch(0.91 0.03 245);
+  --muted-foreground: oklch(0.5 0.04 255);
+  --accent: oklch(0.55 0.2 255);
+  --accent-foreground: oklch(0.99 0.005 255);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.82 0.04 245 / 62%);
+  --input: oklch(0.9 0.03 245 / 78%);
+  --ring: oklch(0.55 0.2 255);
+  --sidebar: oklch(0.96 0.025 250 / 82%);
+  --sidebar-foreground: oklch(0.22 0.035 255);
+  --sidebar-accent: oklch(0.88 0.06 245 / 70%);
+  --sidebar-accent-foreground: oklch(0.2 0.04 255);
+  --sidebar-border: oklch(0.82 0.04 245 / 55%);
+  --sidebar-ring: oklch(0.55 0.2 255);
+}
+
+.dark {
+  --primary: oklch(0.7 0.16 245);
+  --primary-foreground: oklch(0.98 0.001 142);
+  --sidebar-primary: oklch(0.68 0.16 245);
+  --sidebar-primary-foreground: oklch(0.98 0.001 142);
+  --background: oklch(0.16 0.035 255);
+  --foreground: oklch(0.93 0.018 245);
+  --card: oklch(0.24 0.045 255 / 74%);
+  --card-foreground: oklch(0.93 0.018 245);
+  --popover: oklch(0.22 0.04 255 / 95%);
+  --popover-foreground: oklch(0.93 0.018 245);
+  --secondary: oklch(0.32 0.07 250);
+  --secondary-foreground: oklch(0.9 0.02 245);
+  --muted: oklch(0.29 0.05 255);
+  --muted-foreground: oklch(0.72 0.035 245);
+  --accent: oklch(0.7 0.16 245);
+  --accent-foreground: oklch(0.16 0.035 255);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(1 0 0 / 15%);
+  --input: oklch(1 0 0 / 20%);
+  --ring: oklch(0.7 0.16 245);
+  --chart-1: oklch(0.68 0.16 245);
+  --chart-2: oklch(0.7 0.14 215);
+  --chart-3: oklch(0.65 0.14 285);
+  --chart-4: oklch(0.72 0.13 200);
+  --chart-5: oklch(0.58 0.12 250);
+  --sidebar: oklch(0.2 0.045 255 / 82%);
+  --sidebar-foreground: oklch(0.93 0.018 245);
+  --sidebar-accent: oklch(0.31 0.07 250 / 72%);
+  --sidebar-accent-foreground: oklch(0.96 0.015 245);
+  --sidebar-border: oklch(1 0 0 / 15%);
+  --sidebar-ring: oklch(0.65 0.18 142);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Prompt", "Kanit", system-ui, sans-serif;
+    background-image: radial-gradient(circle at 10% 5%, oklch(0.75 0.12 235 / 25%), transparent 28rem), radial-gradient(circle at 90% 10%, oklch(0.68 0.16 275 / 18%), transparent 32rem);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Kanit", "Prompt", system-ui, sans-serif;
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [type="button"]:not(:disabled),
+  [type="submit"]:not(:disabled),
+  [type="reset"]:not(:disabled),
+  a[href],
+  select:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled) {
+    @apply cursor-pointer;
+  }
+}
+
+@layer components {
+  /**
+   * Custom container utility that centers content and adds responsive padding.
+   *
+   * This overrides Tailwind's default container behavior to:
+   * - Auto-center content (mx-auto)
+   * - Add responsive horizontal padding
+   * - Set max-width for large screens
+   *
+   * Usage: <div className="container">...</div>
+   *
+   * For custom widths, use max-w-* utilities directly:
+   * <div className="max-w-6xl mx-auto px-4">...</div>
+   */
+  .container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem; /* 16px - mobile padding */
+    padding-right: 1rem;
+  }
+
+  .flex {
+    min-height: 0;
+    min-width: 0;
+  }
+
+  .gradient-accent {
+    @apply bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 text-white;
+  }
+
+  .glass-panel {
+    @apply border border-white/45 bg-card/75 shadow-xl shadow-blue-950/5 backdrop-blur-xl dark:border-white/10;
+  }
+
+  @media (min-width: 640px) {
+    .container {
+      padding-left: 1.5rem; /* 24px - tablet padding */
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container {
+      padding-left: 2rem; /* 32px - desktop padding */
+      padding-right: 2rem;
+      max-width: 1280px; /* Standard content width */
+    }
+  }
+}

@@ -1,0 +1,153 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1762188582902,
+      "tag": "0000_easy_rocket_racer",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1762188652416,
+      "tag": "0001_chemical_wong",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1762191045124,
+      "tag": "0002_grey_absorbing_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1787407317224,
+      "tag": "0003_mushy_guardsmen",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1787414691723,
+      "tag": "0004_fat_marvel_boy",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1787650533032,
+      "tag": "0005_nebulous_thanos",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1787650595333,
+      "tag": "0006_spicy_argent",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1787675080600,
+      "tag": "0007_worried_banshee",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1787677768483,
+      "tag": "0008_red_the_liberteens",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1787678538259,
+      "tag": "0009_fixed_vulture",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1787678706423,
+      "tag": "0010_wakeful_sprite",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1787684582093,
+      "tag": "0011_gigantic_red_hulk",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1787726422587,
+      "tag": "0012_misty_slayback",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "5",
+      "when": 1787728610574,
+      "tag": "0013_groovy_gargoyle",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "5",
+      "when": 1787730478463,
+      "tag": "0014_small_praxagora",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "5",
+      "when": 1787734450773,
+      "tag": "0015_overjoyed_captain_marvel",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "5",
+      "when": 1787735044752,
+      "tag": "0016_glossy_gideon",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1787739074277,
+      "tag": "0017_aromatic_jazinda",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1787755751410,
+      "tag": "0018_many_smiling_tiger",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1787805038951,
+      "tag": "0019_short_paladin",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1787823506744,
+      "tag": "0020_needy_praxagora",
+      "breakpoints": true
+    }
+  ]
+}

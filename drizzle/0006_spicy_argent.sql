@@ -1,0 +1,1 @@
+ALTER TABLE `notification_preference_audit_logs` MODIFY COLUMN `changed_fields` text NOT NULL;

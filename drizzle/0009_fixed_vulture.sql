@@ -1,0 +1,1 @@
+ALTER TABLE `report_export_approval_requests` ADD `consumed_at` timestamp;

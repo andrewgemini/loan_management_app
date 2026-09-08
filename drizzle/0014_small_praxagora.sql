@@ -1,0 +1,1 @@
+ALTER TABLE `user_dashboard_range_presets` ADD `is_shared` boolean DEFAULT false NOT NULL;

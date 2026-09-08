@@ -1,0 +1,2 @@
+ALTER TABLE `user_dashboard_preset_categories` ADD `color` varchar(16) DEFAULT 'blue' NOT NULL;--> statement-breakpoint
+ALTER TABLE `user_dashboard_preset_categories` ADD `icon` varchar(24) DEFAULT 'folder' NOT NULL;

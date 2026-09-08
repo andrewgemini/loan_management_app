@@ -1,0 +1,1 @@
+ALTER TABLE `report_export_security_policy` ADD `schedule_cron_task_uid` varchar(65);

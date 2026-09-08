@@ -1,0 +1,45 @@
+version: "3.8"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: loan_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: loan_db
+      MYSQL_USER: loan_user
+      MYSQL_PASSWORD: loan_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: loan_app
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: mysql://loan_user:loan_password@mysql:3306/loan_db
+      JWT_SECRET: your-super-secret-jwt-key-change-this-for-production-min-32-chars
+      PORT: 3000
+      NODE_ENV: production
+      VITE_APP_TITLE: ระบบจัดการเงินกู้ (Loan Management)
+      OWNER_OPEN_ID: demo-admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - app_uploads:/app/uploads
+
+volumes:
+  mysql_data:
+  app_uploads:

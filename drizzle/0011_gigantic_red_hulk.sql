@@ -1,0 +1,1 @@
+ALTER TABLE `notifications` MODIFY COLUMN `type` enum('payment_due','loan_status','payment_verified','loan_approved','loan_rejected','export_approval_pending') NOT NULL;
