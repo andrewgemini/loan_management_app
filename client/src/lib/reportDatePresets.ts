@@ -2,7 +2,10 @@ export type ReportDateRange = { startDate: string; endDate: string };
 export type SavedReportPreset = ReportDateRange & { id: string; name: string };
 
 function toInputDate(value: Date): string {
-  return value.toISOString().slice(0, 10);
+  const year = value.getFullYear();
+  const month = String(value.getMonth() + 1).padStart(2, "0");
+  const day = String(value.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 export function getQuickReportRange(preset: "thisMonth" | "lastMonth" | "last90Days", now = new Date()): ReportDateRange {

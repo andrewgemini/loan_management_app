@@ -8,6 +8,6 @@ describe("Home page content", () => {
     expect(source).not.toContain("Example Button");
     expect(source).toContain("วางแผนสัญญา");
     expect(source).not.toContain('href="/loan/create"');
-    expect(source).toContain("onClick={signIn}");
+    expect(source).toContain("handleOAuthSignIn");
   });
 });

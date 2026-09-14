@@ -26,7 +26,7 @@ export async function verifySlipData(
   if (slipOkBranchId && slipOkApiKey) {
     try {
       const formData = new FormData();
-      const blob = new Blob([fileBuffer], { type: "image/jpeg" });
+      const blob = new Blob([new Uint8Array(fileBuffer)], { type: "image/jpeg" });
       formData.append("files", blob, "slip.jpg");
       formData.append("amount", expectedAmount.toString());
 

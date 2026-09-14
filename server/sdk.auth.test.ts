@@ -1,5 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("./_core/env", () => ({
+  ENV: {
+    appId: "app-1",
+    cookieSecret: "loan-management-test-secret-32-characters",
+    databaseUrl: "",
+    oAuthServerUrl: "",
+    ownerOpenId: "",
+    isProduction: false,
+    forgeApiUrl: "",
+    forgeApiKey: "",
+  },
+}));
+
 const dbMock = vi.hoisted(() => ({
   getUserByOpenId: vi.fn(),
   upsertUser: vi.fn(),
