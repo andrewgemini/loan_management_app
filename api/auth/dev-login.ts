@@ -50,6 +50,9 @@ export default async function handler(req: any, res: any) {
     }
 
     const { Pool } = await import("pg");
+    const runtimeConnectionString = connectionString.match(/[?&]sslmode=/i)
+      ? connectionString.replace(/([?&])sslmode=[^&]*/i, "$1sslmode=no-verify")
+      : `${connectionString}${connectionString.includes("?") ? "&" : "?"}sslmode=no-verify`;
     const role = body.role || "borrower";
     const selected = body.openId && role
       ? {
@@ -61,7 +64,7 @@ export default async function handler(req: any, res: any) {
       : (demoUsers[role as keyof typeof demoUsers] || demoUsers.borrower);
 
     const pool = new Pool({
-      connectionString,
+      connectionString: runtimeConnectionString,
       max: 1,
       connectionTimeoutMillis: 10_000,
       idleTimeoutMillis: 10_000,
