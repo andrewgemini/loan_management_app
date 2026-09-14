@@ -65,7 +65,7 @@ const menuItems: DashboardMenuItem[] = [
   { icon: History, label: "ประวัติการทำรายการ", path: "/admin/activity-history", roles: ["admin"] },
   { icon: ClipboardList, label: "Audit Logs", path: "/admin/audit-logs", roles: ["admin"] },
   { icon: FileCheck2, label: "การกำกับรายงาน", path: "/admin/report-governance", roles: ["admin"] },
-  { icon: Settings, label: "ตั้งค่าการแจ้งเตือน", path: "/settings/notifications", roles: ["admin", "lender", "borrower"] },
+  { icon: Settings, label: "ตั้งค่า", path: "/dashboard?section=settings", roles: ["admin", "lender", "borrower"] },
 ];
 
 function getMenuItems(role: "admin" | "lender" | "borrower" | undefined) {

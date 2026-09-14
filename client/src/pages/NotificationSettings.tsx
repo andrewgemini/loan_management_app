@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { AlertCircle, CheckCircle2, Clock3, Info, Mail, MessageCircle, RefreshCw, RotateCcw, Save, Settings2, ShieldCheck } from "lucide-react";
 
-export default function NotificationSettings() {
+export default function NotificationSettings({ embedded = false }: { embedded?: boolean }) {
   const [isSaving, setIsSaving] = useState(false);
   const [lineToken, setLineToken] = useState("");
   const [settingsError, setSettingsError] = useState<string | null>(null);
@@ -156,23 +156,25 @@ export default function NotificationSettings() {
     }
   };
 
+  const Layout = embedded ? React.Fragment : DashboardLayout;
+
   if (isLoadingPrefs) {
     return (
-      <DashboardLayout>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 p-4 md:p-8" role="status" aria-live="polite" aria-busy="true">
-        <div className="mx-auto max-w-4xl space-y-6 animate-pulse">
-          <div className="h-10 w-72 rounded-xl bg-blue-100" />
-          {[1, 2, 3].map((card) => <div key={card} className="h-64 rounded-2xl border border-white/60 bg-white/70 shadow-sm" />)}
-          <p className="text-center text-sm text-muted-foreground">กำลังโหลดการตั้งค่าการแจ้งเตือน...</p>
+      <Layout>
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 p-4 md:p-8" role="status" aria-live="polite" aria-busy="true">
+          <div className="mx-auto max-w-4xl space-y-6 animate-pulse">
+            <div className="h-10 w-72 rounded-xl bg-blue-100" />
+            {[1, 2, 3].map((card) => <div key={card} className="h-64 rounded-2xl border border-white/60 bg-white/70 shadow-sm" />)}
+            <p className="text-center text-sm text-muted-foreground">กำลังโหลดการตั้งค่าการแจ้งเตือน...</p>
+          </div>
         </div>
-      </div>
-      </DashboardLayout>
+      </Layout>
     );
   }
 
   if (isPreferencesError) {
     return (
-      <DashboardLayout>
+      <Layout>
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 p-4">
         <Card className="w-full max-w-lg border-amber-200 bg-white/90 shadow-xl"><CardContent className="space-y-4 p-7 text-center" role="alert">
           <AlertCircle className="mx-auto h-10 w-10 text-amber-600" aria-hidden="true" />
@@ -181,12 +183,12 @@ export default function NotificationSettings() {
           <Button onClick={() => refetch()} className="gap-2"><RefreshCw className="h-4 w-4" aria-hidden="true" />ลองโหลดอีกครั้ง</Button>
         </CardContent></Card>
       </div>
-      </DashboardLayout>
+      </Layout>
     );
   }
 
   return (
-    <DashboardLayout>
+    <Layout>
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
         <div className="mb-8 flex items-start gap-3">
@@ -476,6 +478,6 @@ export default function NotificationSettings() {
         </div>
       </div>
     </div>
-    </DashboardLayout>
+    </Layout>
   );
 }

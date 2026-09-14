@@ -148,6 +148,68 @@ export default async function handler(req: any, res: any) {
     const signature = createHmac("sha256", jwtSecret).update(unsigned).digest("base64url");
     const sessionToken = `${unsigned}.${signature}`;
 
+    // Seed a small, deterministic demo dataset so production flows can be exercised end-to-end.
+    // It is intentionally limited to the demo accounts and is idempotent.
+    if (selected.openId === "demo-admin" || selected.openId === "demo-lender" || selected.openId === "demo-borrower") {
+      await pool.query(
+        `INSERT INTO "notification_preferences" ("user_id")
+         SELECT "id" FROM "users" WHERE "openId" = $1
+         ON CONFLICT ("user_id") DO NOTHING`,
+        [selected.openId]
+      );
+      await pool.query(
+        `INSERT INTO "notifications" ("user_id", "type", "message", "is_read", "sent_via")
+         SELECT "id", $2::notification_type, $3, $4, 'in-app'
+         FROM "users" WHERE "openId" = $1
+         AND NOT EXISTS (
+           SELECT 1 FROM "notifications" n WHERE n."user_id" = "users"."id" AND n."message" = $3
+         )`,
+        [selected.openId, "loan_status", `ข้อมูลทดสอบ: บัญชี ${selected.name} พร้อมใช้งานสำหรับทดสอบการแจ้งเตือน`, false]
+      );
+      await pool.query(
+        `INSERT INTO "notification_preference_audit_logs" ("user_id", "action", "changed_fields")
+         SELECT "id", 'updated', 'emailNewLoanRequest,lineLoanApproval'
+         FROM "users" WHERE "openId" = $1
+         AND NOT EXISTS (
+           SELECT 1 FROM "notification_preference_audit_logs" a WHERE a."user_id" = "users"."id" AND a."changed_fields" = 'emailNewLoanRequest,lineLoanApproval'
+         )`,
+        [selected.openId]
+      );
+    }
+
+    if (selected.openId === "demo-admin") {
+      const borrowerResult = await pool.query(`SELECT "id" FROM "users" WHERE "openId" = 'demo-borrower' LIMIT 1`);
+      const lenderResult = await pool.query(`SELECT "id" FROM "users" WHERE "openId" = 'demo-lender' LIMIT 1`);
+      if (borrowerResult.rows[0]?.id && lenderResult.rows[0]?.id) {
+        const requestResult = await pool.query(
+          `INSERT INTO "loan_requests" ("borrower_id", "amount_requested", "interest_rate", "loan_term_months", "interest_type", "payment_type", "status", "approved_by_id", "approved_at", "decided_at")
+           SELECT $1, 50000.00, 12.00, 6, 'simple', 'reducing', 'approved', $2, NOW(), NOW()
+           WHERE NOT EXISTS (SELECT 1 FROM "loan_requests" WHERE "borrower_id" = $1 AND "amount_requested" = 50000.00)
+           RETURNING id`,
+          [borrowerResult.rows[0].id, lenderResult.rows[0].id]
+        );
+        let requestId = requestResult.rows[0]?.id;
+        if (!requestId) {
+          const existingRequest = await pool.query(`SELECT id FROM "loan_requests" WHERE "borrower_id" = $1 AND "amount_requested" = 50000.00 ORDER BY id LIMIT 1`, [borrowerResult.rows[0].id]);
+          requestId = existingRequest.rows[0]?.id;
+        }
+        if (requestId) {
+          await pool.query(
+            `INSERT INTO "loans" ("request_id", "borrower_id", "lender_id", "principal_amount", "interest_rate", "loan_term_months", "interest_type", "payment_type", "start_date", "next_payment_date", "total_paid", "is_closed")
+             SELECT $1, $2, $3, 50000.00, 12.00, 6, 'simple', 'reducing', CURRENT_DATE, CURRENT_DATE + INTERVAL '1 month', 8833.33, false
+             WHERE NOT EXISTS (SELECT 1 FROM "loans" WHERE "request_id" = $1)`,
+            [requestId, borrowerResult.rows[0].id, lenderResult.rows[0].id]
+          );
+          await pool.query(
+            `INSERT INTO "notifications" ("user_id", "type", "message", "is_read", "sent_via")
+             SELECT "id", 'payment_due', 'ข้อมูลทดสอบ: มีรายการชำระเงินงวดถัดไป ฿8,750.00', false, 'in-app'
+             FROM "users" WHERE "openId" = 'demo-borrower'
+             AND NOT EXISTS (SELECT 1 FROM "notifications" n WHERE n."user_id" = "users"."id" AND n."message" = 'ข้อมูลทดสอบ: มีรายการชำระเงินงวดถัดไป ฿8,750.00')`
+          );
+        }
+      }
+    }
+
     const userResult = await pool.query(
       `SELECT "id", "openId", "name", "email", "avatar_url", "loginMethod", "role", "createdAt", "updatedAt", "lastSignedIn"
        FROM "users" WHERE "openId" = $1 LIMIT 1`,

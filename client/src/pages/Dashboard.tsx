@@ -3,15 +3,19 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import NotificationSettings from "@/pages/NotificationSettings";
 import { TrendingUp, DollarSign, Calendar, AlertCircle } from "lucide-react";
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const [location] = useLocation();
+  const showNotificationSettings = location.includes("?section=settings");
   const { data: myLoans, isLoading: loansLoading } = trpc.loan.getMyLoans.useQuery(undefined, { enabled: Boolean(user) });
   const { data: notifications } = trpc.loan.getNotifications.useQuery(undefined, { enabled: Boolean(user) });
 
   if (!user) return <DashboardLayout><div /></DashboardLayout>;
+  if (showNotificationSettings) return <DashboardLayout><NotificationSettings embedded /></DashboardLayout>;
 
   const unreadNotifications = notifications?.filter((n) => !n.isRead) || [];
   const totalLoans = myLoans?.length || 0;
