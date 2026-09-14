@@ -1,5 +1,6 @@
 import { COOKIE_NAME, ONE_YEAR_MS } from "../../shared/const";
 import express, { type Express, type Request, type Response } from "express";
+import { parse as parseCookieHeader } from "cookie";
 import * as db from "../db";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
@@ -10,6 +11,28 @@ function getQueryParam(req: Request, key: string): string | undefined {
 }
 
 export function registerOAuthRoutes(app: Express) {
+  app.get("/api/auth/me", async (req: Request, res: Response) => {
+    try {
+      const cookies = parseCookieHeader(req.headers.cookie || "");
+      const session = await sdk.verifySession(cookies[COOKIE_NAME]);
+      if (!session) {
+        res.status(401).json({ user: null });
+        return;
+      }
+
+      const user = await db.getUserByOpenId(session.openId);
+      if (!user) {
+        res.status(401).json({ user: null });
+        return;
+      }
+
+      res.json({ user });
+    } catch (error) {
+      console.error("[Auth] Session lookup failed:", error);
+      res.status(500).json({ error: "Failed to resolve current session" });
+    }
+  });
+
   // Original Manus OAuth callback
   app.get("/api/oauth/callback", async (req: Request, res: Response) => {
     const code = getQueryParam(req, "code");
