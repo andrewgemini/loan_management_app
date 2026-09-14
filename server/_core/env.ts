@@ -1,6 +1,7 @@
 export const ENV = {
   appId: process.env.VITE_APP_ID ?? "",
-  cookieSecret: process.env.JWT_SECRET ?? "",
+  // Explicit JWT_SECRET wins; legacy deployments may temporarily derive it from DATABASE_URL.
+  cookieSecret: process.env.JWT_SECRET ?? (process.env.DATABASE_URL ? `db:${process.env.DATABASE_URL}` : ""),
   databaseUrl: process.env.DATABASE_URL ?? "",
   oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "",
   ownerOpenId: process.env.OWNER_OPEN_ID ?? "",

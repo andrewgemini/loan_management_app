@@ -311,7 +311,7 @@ var settings = pgTable("settings", {
 // server/_core/env.ts
 var ENV = {
   appId: process.env.VITE_APP_ID ?? "",
-  cookieSecret: process.env.JWT_SECRET ?? "",
+  cookieSecret: process.env.JWT_SECRET ?? (process.env.DATABASE_URL ? `db:${process.env.DATABASE_URL}` : ""),
   databaseUrl: process.env.DATABASE_URL ?? "",
   oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "",
   ownerOpenId: process.env.OWNER_OPEN_ID ?? "",

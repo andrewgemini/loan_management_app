@@ -31,7 +31,7 @@ export default async function handler(req: any, res: any) {
   try {
     const body = req.body || {};
     const connectionString = process.env.DATABASE_URL?.trim();
-    const jwtSecret = process.env.JWT_SECRET?.trim();
+    const jwtSecret = process.env.JWT_SECRET?.trim() || (process.env.DATABASE_URL ? `db:${process.env.DATABASE_URL}` : "");
     if (!connectionString) {
       res.status(503).json({ error: "database_unavailable" });
       return;
