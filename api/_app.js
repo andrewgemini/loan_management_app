@@ -4676,7 +4676,29 @@ async function createContext(opts) {
           algorithms: ["HS256"]
         });
         if (isValidSessionIdentity(payload)) {
-          user = await getUserByOpenId(payload.openId);
+          const connectionString = (process.env.POSTGRES_URL ?? process.env.POSTGRES_PRISMA_URL ?? process.env.POSTGRES_URL_NON_POOLING ?? process.env.DATABASE_URL)?.trim();
+          if (connectionString) {
+            const runtimeConnectionString = connectionString
+              .replace(/([?&])sslmode=[^&]*/i, "$1")
+              .replace(/([?&])channel_binding=[^&]*/i, "$1")
+              .replace(/[?&]$/, "");
+            const authPool = new Pool({
+              connectionString: runtimeConnectionString,
+              max: 1,
+              connectionTimeoutMillis: 10e3,
+              family: 4,
+              ssl: { rejectUnauthorized: false }
+            });
+            try {
+              const result = await authPool.query(
+                `SELECT "id", "openId", "name", "email", "avatar_url", "loginMethod", "role", "createdAt", "updatedAt", "lastSignedIn" FROM "users" WHERE "openId" = $1 LIMIT 1`,
+                [payload.openId]
+              );
+              user = result.rows[0] ?? null;
+            } finally {
+              await authPool.end().catch(() => undefined);
+            }
+          }
         }
       }
     } catch (error) {
