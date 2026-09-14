@@ -44,18 +44,31 @@ export default async function handler(req: any, res: any) {
         }
       : (demoUsers[role as keyof typeof demoUsers] || demoUsers.borrower);
 
-    await db.upsertUser({
-      openId: selected.openId,
-      name: selected.name || null,
-      email: selected.email ?? null,
-      loginMethod: "local",
-      role: selected.role,
-      lastSignedIn: new Date(),
-    });
+    try {
+      await db.upsertUser({
+        openId: selected.openId,
+        name: selected.name || null,
+        email: selected.email ?? null,
+        loginMethod: "local",
+        role: selected.role,
+        lastSignedIn: new Date(),
+      });
+    } catch (error) {
+      console.error("[Auth] Dev login database step failed:", error);
+      res.status(503).json({ error: "database_unavailable" });
+      return;
+    }
 
-    const sessionToken = await sdk.createSessionToken(selected.openId, {
-      name: selected.name || "",
-    });
+    let sessionToken: string;
+    try {
+      sessionToken = await sdk.createSessionToken(selected.openId, {
+        name: selected.name || "",
+      });
+    } catch (error) {
+      console.error("[Auth] Dev login session signing failed:", error);
+      res.status(500).json({ error: "session_signing_failed" });
+      return;
+    }
 
     const forwardedProto = req.headers["x-forwarded-proto"];
     const secure = Array.isArray(forwardedProto)
@@ -72,7 +85,15 @@ export default async function handler(req: any, res: any) {
     if (secure) cookieParts.push("Secure");
     res.setHeader("Set-Cookie", cookieParts.join("; "));
 
-    const user = await db.getUserByOpenId(selected.openId);
+    let user;
+    try {
+      user = await db.getUserByOpenId(selected.openId);
+    } catch (error) {
+      console.error("[Auth] Dev login user lookup failed:", error);
+      res.status(503).json({ error: "database_unavailable" });
+      return;
+    }
+
     res.status(200).json({ success: true, user });
   } catch (error) {
     console.error("[Auth] Dev login failed:", error);
