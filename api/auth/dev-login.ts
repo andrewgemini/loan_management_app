@@ -38,7 +38,7 @@ export default async function handler(req: any, res: any) {
     )?.trim();
     const jwtSecret = process.env.JWT_SECRET?.trim() || (connectionString ? `db:${connectionString}` : "");
     if (!connectionString) {
-      res.status(503).json({ error: "database_unavailable" });
+      res.status(503).json({ error: "database_unconfigured" });
       return;
     }
     if (!jwtSecret) {
@@ -80,7 +80,7 @@ export default async function handler(req: any, res: any) {
     } catch (error) {
       console.error("[Auth] Dev login database step failed:", error);
       await pool.end().catch(() => undefined);
-      res.status(503).json({ error: "database_unavailable" });
+      res.status(503).json({ error: "database_connection_failed" });
       return;
     }
 
