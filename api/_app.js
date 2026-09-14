@@ -309,7 +309,7 @@ var settings = pgTable("settings", {
 });
 
 // server/_core/env.ts
-var databaseUrl = process.env.DATABASE_URL ?? process.env.POSTGRES_URL ?? process.env.POSTGRES_PRISMA_URL ?? process.env.POSTGRES_URL_NON_POOLING ?? "";
+var databaseUrl = process.env.POSTGRES_URL ?? process.env.POSTGRES_PRISMA_URL ?? process.env.POSTGRES_URL_NON_POOLING ?? process.env.DATABASE_URL ?? "";
 var ENV = {
   appId: process.env.VITE_APP_ID?.trim() || "loan-management-app",
   cookieSecret: process.env.JWT_SECRET ?? (databaseUrl ? `db:${databaseUrl}` : ""),
