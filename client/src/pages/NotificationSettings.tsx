@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -9,6 +10,12 @@ import { toast } from "sonner";
 import { AlertCircle, CheckCircle2, Clock3, Info, Mail, MessageCircle, RefreshCw, RotateCcw, Save, Settings2, ShieldCheck } from "lucide-react";
 
 export default function NotificationSettings({ embedded = false }: { embedded?: boolean }) {
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    if (!embedded) navigate("/dashboard?section=settings", { replace: true });
+  }, [embedded, navigate]);
+
   const [isSaving, setIsSaving] = useState(false);
   const [lineToken, setLineToken] = useState("");
   const [settingsError, setSettingsError] = useState<string | null>(null);
