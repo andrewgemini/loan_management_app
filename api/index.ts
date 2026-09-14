@@ -1,32 +1,5 @@
-import type { RequestHandler } from "express";
+import { createApiApp } from "./_app";
 
-let appPromise: Promise<RequestHandler> | null = null;
+const app = createApiApp();
 
-function getApp(): Promise<RequestHandler> {
-  if (!appPromise) {
-    appPromise = import("./_app")
-      .then(({ createApiApp }) => createApiApp())
-      .catch(error => {
-        appPromise = null;
-        throw error;
-      });
-  }
-  return appPromise;
-}
-
-export default async function handler(req: Parameters<RequestHandler>[0], res: Parameters<RequestHandler>[1]) {
-  if (req.url === "/api/__build") {
-    return res.status(200).json({ ok: true, build: "a641089" });
-  }
-
-  try {
-    const app = await getApp();
-    return app(req, res);
-  } catch (error) {
-    console.error("[Vercel API] Startup failed:", error);
-    return res.status(500).json({
-      error: "API startup failed",
-      message: error instanceof Error ? error.message : String(error),
-    });
-  }
-}
+export default app;
