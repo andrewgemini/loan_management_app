@@ -30,11 +30,14 @@ export default async function handler(req: any, res: any) {
 
   try {
     const body = req.body || {};
+    // Prefer Supabase's session-mode pooler for node-postgres on Vercel.
+    // POSTGRES_PRISMA_URL is transaction-mode and can be less suitable for a
+    // long-lived pg Pool even though it is valid for many serverless ORMs.
     const connectionString = (
       process.env.DATABASE_URL
+      ?? process.env.POSTGRES_URL_NON_POOLING
       ?? process.env.POSTGRES_URL
       ?? process.env.POSTGRES_PRISMA_URL
-      ?? process.env.POSTGRES_URL_NON_POOLING
     )?.trim();
     const jwtSecret = process.env.JWT_SECRET?.trim() || (connectionString ? `db:${connectionString}` : "");
     if (!connectionString) {
@@ -62,6 +65,7 @@ export default async function handler(req: any, res: any) {
       max: 1,
       connectionTimeoutMillis: 10_000,
       idleTimeoutMillis: 10_000,
+      family: 4,
     });
 
     try {
@@ -80,18 +84,36 @@ export default async function handler(req: any, res: any) {
     } catch (error) {
       console.error("[Auth] Dev login database step failed:", error);
       await pool.end().catch(() => undefined);
-      const codes = typeof error === "object" && error
-        ? [
-            (error as { code?: unknown }).code,
-            (error as { cause?: { code?: unknown } }).cause?.code,
-            ...(((error as { errors?: Array<{ code?: unknown }> }).errors ?? []).map(item => item?.code)),
-          ].filter(Boolean).map(String)
+      const nested = typeof error === "object" && error && "errors" in error
+        ? ((error as { errors?: unknown }).errors as unknown[] | undefined) ?? []
         : [];
-      const name = typeof error === "object" && error && "name" in error ? String((error as { name?: unknown }).name || "") : "";
-      const message = typeof error === "object" && error && "message" in error
-        ? String((error as { message?: unknown }).message || "").replace(/postgres(?:ql)?:\\/\\/[^@]+@/gi, "postgres://***@").slice(0, 160)
-        : "";
-      res.status(503).json({ error: `database_error_${codes.join("_") || name || "unknown"}`, detail: message || undefined });
+      const candidates = [
+        error,
+        typeof error === "object" && error && "cause" in error ? (error as { cause?: unknown }).cause : undefined,
+        ...nested,
+      ].filter(Boolean);
+      const sanitize = (value: unknown) => String(value ?? "")
+        .replace(/postgres(?:ql)?:\\/\\/[^@\s]+@/gi, "postgres://***@")
+        .replace(/password[=:\\s]+[^\\s,;]+/gi, "password=***")
+        .slice(0, 220);
+      const codes = candidates
+        .map(item => typeof item === "object" && item && "code" in item ? (item as { code?: unknown }).code : undefined)
+        .filter(Boolean)
+        .map(String);
+      const names = candidates
+        .map(item => typeof item === "object" && item && "name" in item ? (item as { name?: unknown }).name : undefined)
+        .filter(Boolean)
+        .map(String);
+      const messages = candidates
+        .map(item => typeof item === "object" && item && "message" in item ? (item as { message?: unknown }).message : item)
+        .filter(Boolean)
+        .map(sanitize)
+        .filter(Boolean);
+      const reason = codes[0] || names[0] || "unknown";
+      res.status(503).json({
+        error: `database_error_${reason}`,
+        detail: messages.join(" | ") || undefined,
+      });
       return;
     }
 
