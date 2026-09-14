@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { AlertCircle, CheckCircle2, Clock3, Info, Mail, MessageCircle, RefreshCw, RotateCcw, Save, Settings2, ShieldCheck } from "lucide-react";
 
-export default function NotificationSettings({ embedded = false }: { embedded?: boolean }) {
+export default function NotificationSettings({ embedded = false }: { embedded?: boolean } & Record<string, unknown>) {
   const [, navigate] = useLocation();
 
   useEffect(() => {
