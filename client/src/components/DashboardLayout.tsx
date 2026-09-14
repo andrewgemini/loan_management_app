@@ -65,7 +65,7 @@ const menuItems: DashboardMenuItem[] = [
   { icon: History, label: "ประวัติการทำรายการ", path: "/admin/activity-history", roles: ["admin"] },
   { icon: ClipboardList, label: "Audit Logs", path: "/admin/audit-logs", roles: ["admin"] },
   { icon: FileCheck2, label: "การกำกับรายงาน", path: "/admin/report-governance", roles: ["admin"] },
-  { icon: Settings, label: "ตั้งค่า", path: "/dashboard?section=settings", roles: ["admin", "lender", "borrower"] },
+  { icon: Settings, label: "ตั้งค่าการแจ้งเตือน", path: "/dashboard?section=notifications", roles: ["admin", "lender", "borrower"] },
 ];
 
 function getMenuItems(role: "admin" | "lender" | "borrower" | undefined) {
@@ -264,8 +264,8 @@ function DashboardLayoutContent({
           <SidebarContent className="gap-0">
             <SidebarMenu className="px-2 py-1">
               {visibleMenuItems.map(item => {
-                const isActive = item.path === "/dashboard?section=settings"
-                  ? location === item.path || location.startsWith("/dashboard?section=settings")
+                const isActive = item.path === "/dashboard?section=notifications"
+                  ? location === item.path || location.startsWith("/dashboard?section=notifications") || location.startsWith("/dashboard?section=settings")
                   : location === item.path;
                 return (
                   <SidebarMenuItem key={item.path}>

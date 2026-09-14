@@ -18,7 +18,7 @@ export default function NotificationSettings({ embedded = false }: NotificationS
   const [, navigate] = useLocation();
 
   useEffect(() => {
-    if (!embedded) navigate("/dashboard?section=settings", { replace: true });
+    if (!embedded) navigate("/dashboard?section=notifications", { replace: true });
   }, [embedded, navigate]);
 
   const [isSaving, setIsSaving] = useState(false);

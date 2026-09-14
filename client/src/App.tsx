@@ -20,7 +20,7 @@ const ProfileSettings = lazy(() => import("./pages/ProfileSettings"));
 function NotificationSettingsRedirect() {
   const [, navigate] = useLocation();
   useEffect(() => {
-    navigate("/dashboard?section=settings", { replace: true });
+    navigate("/dashboard?section=notifications", { replace: true });
   }, [navigate]);
   return <RouteLoadingFallback />;
 }

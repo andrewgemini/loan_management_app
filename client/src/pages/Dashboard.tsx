@@ -10,7 +10,7 @@ import { TrendingUp, DollarSign, Calendar, AlertCircle } from "lucide-react";
 export default function Dashboard() {
   const { user } = useAuth();
   const [location] = useLocation();
-  const showNotificationSettings = location.includes("?section=settings");
+  const showNotificationSettings = location.includes("?section=notifications") || location.includes("?section=settings");
   const { data: myLoans, isLoading: loansLoading } = trpc.loan.getMyLoans.useQuery(undefined, { enabled: Boolean(user) });
   const { data: notifications } = trpc.loan.getNotifications.useQuery(undefined, { enabled: Boolean(user) });
 
