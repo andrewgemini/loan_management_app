@@ -88,7 +88,10 @@ export default async function handler(req: any, res: any) {
           ].filter(Boolean).map(String)
         : [];
       const name = typeof error === "object" && error && "name" in error ? String((error as { name?: unknown }).name || "") : "";
-      res.status(503).json({ error: `database_error_${codes.join("_") || name || "unknown"}` });
+      const message = typeof error === "object" && error && "message" in error
+        ? String((error as { message?: unknown }).message || "").replace(/postgres(?:ql)?:\\/\\/[^@]+@/gi, "postgres://***@").slice(0, 160)
+        : "";
+      res.status(503).json({ error: `database_error_${codes.join("_") || name || "unknown"}`, detail: message || undefined });
       return;
     }
 
