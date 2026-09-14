@@ -80,8 +80,14 @@ export default async function handler(req: any, res: any) {
     } catch (error) {
       console.error("[Auth] Dev login database step failed:", error);
       await pool.end().catch(() => undefined);
-      const code = typeof error === "object" && error && "code" in error ? String((error as { code?: unknown }).code || "unknown") : "unknown";
-      res.status(503).json({ error: `database_error_${code}` });
+      const codes = typeof error === "object" && error
+        ? [
+            (error as { code?: unknown }).code,
+            (error as { cause?: { code?: unknown } }).cause?.code,
+            ...(((error as { errors?: Array<{ code?: unknown }> }).errors ?? []).map(item => item?.code)),
+          ].filter(Boolean).map(String)
+        : [];
+      res.status(503).json({ error: `database_error_${codes.join("_") || "unknown"}` });
       return;
     }
 
