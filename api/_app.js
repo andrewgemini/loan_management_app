@@ -326,7 +326,7 @@ var _db = null;
 var _pool = null;
 async function getDb() {
   if (_db) return _db;
-  const connectionString = (process.env.DATABASE_URL ?? process.env.POSTGRES_URL_NON_POOLING ?? process.env.POSTGRES_URL ?? process.env.POSTGRES_PRISMA_URL)?.trim();
+  const connectionString = (process.env.POSTGRES_URL ?? process.env.POSTGRES_PRISMA_URL ?? process.env.POSTGRES_URL_NON_POOLING ?? process.env.DATABASE_URL)?.trim();
   if (!connectionString) {
     throw new Error("PostgreSQL connection URL is not configured");
   }

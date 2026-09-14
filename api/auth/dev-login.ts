@@ -34,10 +34,10 @@ export default async function handler(req: any, res: any) {
     // POSTGRES_PRISMA_URL is transaction-mode and can be less suitable for a
     // long-lived pg Pool even though it is valid for many serverless ORMs.
     const connectionString = (
-      process.env.DATABASE_URL
-      ?? process.env.POSTGRES_URL_NON_POOLING
-      ?? process.env.POSTGRES_URL
+      process.env.POSTGRES_URL
       ?? process.env.POSTGRES_PRISMA_URL
+      ?? process.env.POSTGRES_URL_NON_POOLING
+      ?? process.env.DATABASE_URL
     )?.trim();
     const jwtSecret = process.env.JWT_SECRET?.trim() || (connectionString ? `db:${connectionString}` : "");
     if (!connectionString) {
@@ -50,9 +50,10 @@ export default async function handler(req: any, res: any) {
     }
 
     const { Pool } = await import("pg");
-    const runtimeConnectionString = connectionString.match(/[?&]sslmode=/i)
-      ? connectionString.replace(/([?&])sslmode=[^&]*/i, "$1sslmode=no-verify")
-      : `${connectionString}${connectionString.includes("?") ? "&" : "?"}sslmode=no-verify`;
+    const runtimeConnectionString = connectionString
+      .replace(/([?&])sslmode=[^&]*/i, "$1")
+      .replace(/([?&])channel_binding=[^&]*/i, "$1")
+      .replace(/[?&]$/, "");
     const role = body.role || "borrower";
     const selected = body.openId && role
       ? {

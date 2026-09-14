@@ -24,10 +24,10 @@ export default async function handler(req: any, res: any) {
     }
 
     const connectionString = (
-      process.env.DATABASE_URL
-      ?? process.env.POSTGRES_URL
+      process.env.POSTGRES_URL
       ?? process.env.POSTGRES_PRISMA_URL
       ?? process.env.POSTGRES_URL_NON_POOLING
+      ?? process.env.DATABASE_URL
     )?.trim();
     const jwtSecret = process.env.JWT_SECRET?.trim() || (connectionString ? `db:${connectionString}` : "");
     if (!jwtSecret || !connectionString) {
@@ -60,8 +60,12 @@ export default async function handler(req: any, res: any) {
     }
 
     const { Pool } = await import("pg");
+    const runtimeConnectionString = connectionString
+      .replace(/([?&])sslmode=[^&]*/i, "$1")
+      .replace(/([?&])channel_binding=[^&]*/i, "$1")
+      .replace(/[?&]$/, "");
     const pool = new Pool({
-      connectionString,
+      connectionString: runtimeConnectionString,
       max: 1,
       connectionTimeoutMillis: 10_000,
       idleTimeoutMillis: 10_000,
