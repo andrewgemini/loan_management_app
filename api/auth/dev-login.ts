@@ -80,7 +80,8 @@ export default async function handler(req: any, res: any) {
     } catch (error) {
       console.error("[Auth] Dev login database step failed:", error);
       await pool.end().catch(() => undefined);
-      res.status(503).json({ error: "database_connection_failed" });
+      const code = typeof error === "object" && error && "code" in error ? String((error as { code?: unknown }).code || "unknown") : "unknown";
+      res.status(503).json({ error: `database_error_${code}` });
       return;
     }
 
