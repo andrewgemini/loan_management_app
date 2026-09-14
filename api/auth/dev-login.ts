@@ -87,6 +87,17 @@ export default async function handler(req: any, res: any) {
         [selected.openId, selected.name || null, selected.email ?? null, "local", selected.role]
       );
     } catch (error) {
+      const code = typeof error === "object" && error && "code" in error ? String((error as { code?: unknown }).code || "") : "";
+      if (code === "42P01") {
+        await pool.end().catch(() => undefined);
+        try {
+          const { bootstrapDatabase } = await import("../admin/bootstrap-db");
+          await bootstrapDatabase(connectionString);
+          return handler(req, res);
+        } catch (bootstrapError) {
+          console.error("[Auth] Production schema bootstrap failed:", bootstrapError);
+        }
+      }
       console.error("[Auth] Dev login database step failed:", error);
       await pool.end().catch(() => undefined);
       const nested = typeof error === "object" && error && "errors" in error

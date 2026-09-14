@@ -42,16 +42,7 @@ CREATE UNIQUE INDEX "user_dashboard_preset_pins_user_preset_unique" ON "user_das
 CREATE UNIQUE INDEX "user_dashboard_preset_recent_uses_user_preset_unique" ON "user_dashboard_preset_recent_uses" USING btree ("user_id","preset_id");
 `.trim().split("\n");
 
-export default async function handler(req: any, res: any) {
-  if (req.method !== "POST" || req.headers["x-bootstrap-token"] !== TOKEN) {
-    res.status(404).json({ error: "not_found" });
-    return;
-  }
-  const connectionString = (process.env.POSTGRES_URL ?? process.env.POSTGRES_PRISMA_URL ?? process.env.POSTGRES_URL_NON_POOLING ?? process.env.DATABASE_URL)?.trim();
-  if (!connectionString) {
-    res.status(503).json({ error: "database_unconfigured" });
-    return;
-  }
+export async function bootstrapDatabase(connectionString: string) {
   const runtimeConnectionString = connectionString
     .replace(/([?&])sslmode=[^&]*/i, "$1")
     .replace(/([?&])channel_binding=[^&]*/i, "$1")
@@ -70,11 +61,27 @@ export default async function handler(req: any, res: any) {
     } finally {
       client.release();
     }
-    res.status(200).json({ success: true, statements: statements.length });
+    return statements.length;
+  } finally {
+    await pool.end().catch(() => undefined);
+  }
+}
+
+export default async function handler(req: any, res: any) {
+  if (req.method !== "POST" || req.headers["x-bootstrap-token"] !== TOKEN) {
+    res.status(404).json({ error: "not_found" });
+    return;
+  }
+  const connectionString = (process.env.POSTGRES_URL ?? process.env.POSTGRES_PRISMA_URL ?? process.env.POSTGRES_URL_NON_POOLING ?? process.env.DATABASE_URL)?.trim();
+  if (!connectionString) {
+    res.status(503).json({ error: "database_unconfigured" });
+    return;
+  }
+  try {
+    const count = await bootstrapDatabase(connectionString);
+    res.status(200).json({ success: true, statements: count });
   } catch (error) {
     const e = error as { code?: string; message?: string };
     res.status(500).json({ error: e.code || "migration_failed", detail: String(e.message || "").slice(0, 240) });
-  } finally {
-    await pool.end().catch(() => undefined);
   }
 }
