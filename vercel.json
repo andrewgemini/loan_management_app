@@ -3,6 +3,11 @@
   "buildCommand": "pnpm build",
   "outputDirectory": "dist/public",
   "framework": "vite",
+  "functions": {
+    "api/index.ts": {
+      "includeFiles": "api/_app.js"
+    }
+  },
   "rewrites": [
     {
       "source": "/api/(.*)",
