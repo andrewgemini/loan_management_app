@@ -5,19 +5,33 @@ import { InsertUser, users, loanRequests, loans, amortizationSchedules, loanPaym
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
+let _pool: Pool | null = null;
 
-// Lazily create the drizzle instance so local tooling can run without a DB.
+// Lazily create one PostgreSQL pool. The driver opens connections on demand,
+// so construction alone is not a database connectivity check.
 export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
-    try {
-      const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-      _db = drizzle(pool);
-    } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
-      _db = null;
-    }
+  if (_db) return _db;
+
+  const connectionString = process.env.DATABASE_URL?.trim();
+  if (!connectionString) {
+    throw new Error("DATABASE_URL is not configured");
   }
-  return _db;
+
+  try {
+    _pool = new Pool({
+      connectionString,
+      max: 5,
+      connectionTimeoutMillis: 10_000,
+      idleTimeoutMillis: 30_000,
+    });
+    _db = drizzle(_pool);
+    return _db;
+  } catch (error) {
+    _pool = null;
+    _db = null;
+    console.error("[Database] Failed to initialize PostgreSQL:", error);
+    throw new Error("Database initialization failed", { cause: error });
+  }
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {
@@ -26,10 +40,6 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   }
 
   const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot upsert user: database not available");
-    return;
-  }
 
   try {
     const values: InsertUser = {
