@@ -23,8 +23,13 @@ export default async function handler(req: any, res: any) {
       return;
     }
 
-    const jwtSecret = process.env.JWT_SECRET?.trim() || (process.env.DATABASE_URL ? `db:${process.env.DATABASE_URL}` : "");
-    const connectionString = process.env.DATABASE_URL?.trim();
+    const connectionString = (
+      process.env.DATABASE_URL
+      ?? process.env.POSTGRES_URL
+      ?? process.env.POSTGRES_PRISMA_URL
+      ?? process.env.POSTGRES_URL_NON_POOLING
+    )?.trim();
+    const jwtSecret = process.env.JWT_SECRET?.trim() || (connectionString ? `db:${connectionString}` : "");
     if (!jwtSecret || !connectionString) {
       res.status(503).json({ user: null });
       return;

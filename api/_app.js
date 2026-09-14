@@ -309,10 +309,11 @@ var settings = pgTable("settings", {
 });
 
 // server/_core/env.ts
+var databaseUrl = process.env.DATABASE_URL ?? process.env.POSTGRES_URL ?? process.env.POSTGRES_PRISMA_URL ?? process.env.POSTGRES_URL_NON_POOLING ?? "";
 var ENV = {
   appId: process.env.VITE_APP_ID ?? "",
-  cookieSecret: process.env.JWT_SECRET ?? (process.env.DATABASE_URL ? `db:${process.env.DATABASE_URL}` : ""),
-  databaseUrl: process.env.DATABASE_URL ?? "",
+  cookieSecret: process.env.JWT_SECRET ?? (databaseUrl ? `db:${databaseUrl}` : ""),
+  databaseUrl,
   oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "",
   ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
   isProduction: process.env.NODE_ENV === "production",
@@ -325,9 +326,9 @@ var _db = null;
 var _pool = null;
 async function getDb() {
   if (_db) return _db;
-  const connectionString = process.env.DATABASE_URL?.trim();
+  const connectionString = (process.env.DATABASE_URL ?? process.env.POSTGRES_URL ?? process.env.POSTGRES_PRISMA_URL ?? process.env.POSTGRES_URL_NON_POOLING)?.trim();
   if (!connectionString) {
-    throw new Error("DATABASE_URL is not configured");
+    throw new Error("PostgreSQL connection URL is not configured");
   }
   try {
     _pool = new Pool({
