@@ -1,19 +1,8 @@
 import "dotenv/config";
-import express from "express";
 import { createServer } from "http";
 import net from "net";
-import path from "path";
-import fs from "fs";
-import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { registerOAuthRoutes } from "./oauth";
-import { appRouter } from "../routers";
-import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
-import { initializeEmailService } from "../emailService";
-import { sendUpcomingPaymentReminders } from "../scheduledReminder";
-import { runReportDownloadRetentionCleanup } from "../reportRetentionCleanup";
-import { apiSecurityMiddleware } from "../securityMiddleware";
-import { registerStorageProxy } from "./storageProxy";
+import { configureEmailService, createApiApp } from "./app";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -25,65 +14,18 @@ function isPortAvailable(port: number): Promise<boolean> {
   });
 }
 
-async function findAvailablePort(startPort: number = 3000): Promise<number> {
+async function findAvailablePort(startPort = 3000): Promise<number> {
   for (let port = startPort; port < startPort + 20; port++) {
-    if (await isPortAvailable(port)) {
-      return port;
-    }
+    if (await isPortAvailable(port)) return port;
   }
   throw new Error(`No available port found starting from ${startPort}`);
 }
 
 async function startServer() {
-  const app = express();
+  const app = createApiApp();
   const server = createServer(app);
+  configureEmailService();
 
-  const smtpHost = process.env.SMTP_HOST;
-  const smtpUser = process.env.SMTP_USER;
-  const smtpPass = process.env.SMTP_PASS;
-  if (smtpHost && smtpUser && smtpPass) {
-    const smtpPort = Number(process.env.SMTP_PORT || 587);
-    initializeEmailService({
-      host: smtpHost,
-      port: Number.isFinite(smtpPort) ? smtpPort : 587,
-      secure: process.env.SMTP_SECURE === "true" || smtpPort === 465,
-      auth: { user: smtpUser, pass: smtpPass },
-      from: process.env.EMAIL_FROM || smtpUser,
-    });
-    console.log("[Email] SMTP service initialized");
-  } else {
-    console.log("[Email] SMTP is not configured; email delivery is disabled");
-  }
-
-  // Ensure local uploads directory exists and is statically served
-  const uploadsDir = path.resolve(process.cwd(), "uploads");
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-  }
-  app.use("/uploads", express.static(uploadsDir));
-
-  // Configure body parser with larger size limit for file uploads
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
-  app.use("/api", apiSecurityMiddleware);
-  registerStorageProxy(app);
-  // OAuth callback and Dev/Demo login under /api/oauth and /api/auth
-  registerOAuthRoutes(app);
-  // tRPC API
-  app.use(
-    "/api/trpc",
-    createExpressMiddleware({
-      router: appRouter,
-      createContext,
-    })
-  );
-
-  // Heartbeat callback สำหรับแจ้งเตือนก่อนครบกำหนดชำระ
-  app.post("/api/scheduled/payment-reminders", sendUpcomingPaymentReminders);
-  // Heartbeat callback สำหรับ retention metadata ของ Report Governance
-  app.post("/api/scheduled/report-download-retention", runReportDownloadRetentionCleanup);
-
-  // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {
@@ -92,14 +34,17 @@ async function startServer() {
 
   const preferredPort = parseInt(process.env.PORT || "3000");
   const port = await findAvailablePort(preferredPort);
-
   if (port !== preferredPort) {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
-
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
   });
 }
 
-startServer().catch(console.error);
+if (!process.env.VERCEL) {
+  startServer().catch(error => {
+    console.error("[Server] Startup failed:", error);
+    process.exitCode = 1;
+  });
+}
