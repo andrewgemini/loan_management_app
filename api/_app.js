@@ -4667,6 +4667,22 @@ async function createContext(opts) {
   } catch (error) {
     user = null;
   }
+  if (!user) {
+    try {
+      const cookieHeader = opts.req.headers.cookie ?? "";
+      const sessionCookie = parseCookieHeader(cookieHeader)[COOKIE_NAME];
+      if (sessionCookie && ENV.cookieSecret) {
+        const { payload } = await jwtVerify(sessionCookie, new TextEncoder().encode(ENV.cookieSecret), {
+          algorithms: ["HS256"]
+        });
+        if (isValidSessionIdentity(payload)) {
+          user = await getUserByOpenId(payload.openId);
+        }
+      }
+    } catch (error) {
+      console.warn("[Auth] Local session fallback failed", String(error));
+    }
+  }
   return {
     req: opts.req,
     res: opts.res,
