@@ -15,6 +15,10 @@ function getApp(): Promise<RequestHandler> {
 }
 
 export default async function handler(req: Parameters<RequestHandler>[0], res: Parameters<RequestHandler>[1]) {
+  if (req.url === "/api/__build") {
+    return res.status(200).json({ ok: true, build: "a641089" });
+  }
+
   try {
     const app = await getApp();
     return app(req, res);
