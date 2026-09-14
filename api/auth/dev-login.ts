@@ -29,11 +29,19 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const [db, { sdk }] = await Promise.all([
-      import("../../server/db"),
-      import("../../server/_core/sdk"),
-    ]);
     const body = req.body || {};
+    const connectionString = process.env.DATABASE_URL?.trim();
+    const jwtSecret = process.env.JWT_SECRET?.trim();
+    if (!connectionString) {
+      res.status(503).json({ error: "database_unavailable" });
+      return;
+    }
+    if (!jwtSecret) {
+      res.status(500).json({ error: "session_signing_failed" });
+      return;
+    }
+
+    const { Pool } = await import("pg");
     const role = body.role || "borrower";
     const selected = body.openId && role
       ? {
@@ -44,31 +52,54 @@ export default async function handler(req: any, res: any) {
         }
       : (demoUsers[role as keyof typeof demoUsers] || demoUsers.borrower);
 
+    const pool = new Pool({
+      connectionString,
+      max: 1,
+      connectionTimeoutMillis: 10_000,
+      idleTimeoutMillis: 10_000,
+    });
+
     try {
-      await db.upsertUser({
-        openId: selected.openId,
-        name: selected.name || null,
-        email: selected.email ?? null,
-        loginMethod: "local",
-        role: selected.role,
-        lastSignedIn: new Date(),
-      });
+      await pool.query(
+        `INSERT INTO "users" ("openId", "name", "email", "loginMethod", "role", "lastSignedIn", "updatedAt")
+         VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+         ON CONFLICT ("openId") DO UPDATE SET
+           "name" = EXCLUDED."name",
+           "email" = EXCLUDED."email",
+           "loginMethod" = EXCLUDED."loginMethod",
+           "role" = EXCLUDED."role",
+           "lastSignedIn" = NOW(),
+           "updatedAt" = NOW()` ,
+        [selected.openId, selected.name || null, selected.email ?? null, "local", selected.role]
+      );
     } catch (error) {
       console.error("[Auth] Dev login database step failed:", error);
+      await pool.end().catch(() => undefined);
       res.status(503).json({ error: "database_unavailable" });
       return;
     }
 
-    let sessionToken: string;
-    try {
-      sessionToken = await sdk.createSessionToken(selected.openId, {
-        name: selected.name || "",
-      });
-    } catch (error) {
-      console.error("[Auth] Dev login session signing failed:", error);
-      res.status(500).json({ error: "session_signing_failed" });
-      return;
-    }
+    const { createHmac } = await import("node:crypto");
+    const issuedAt = Date.now();
+    const payload = {
+      openId: selected.openId,
+      appId: process.env.VITE_APP_ID || "",
+      name: selected.name || "",
+      exp: Math.floor((issuedAt + ONE_YEAR_MS) / 1000),
+    };
+    const encode = (value: string) => Buffer.from(value).toString("base64url");
+    const header = encode(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+    const bodyPart = encode(JSON.stringify(payload));
+    const unsigned = `${header}.${bodyPart}`;
+    const signature = createHmac("sha256", jwtSecret).update(unsigned).digest("base64url");
+    const sessionToken = `${unsigned}.${signature}`;
+
+    const userResult = await pool.query(
+      `SELECT "id", "openId", "name", "email", "avatar_url", "loginMethod", "role", "createdAt", "updatedAt", "lastSignedIn"
+       FROM "users" WHERE "openId" = $1 LIMIT 1`,
+      [selected.openId]
+    );
+    await pool.end().catch(() => undefined);
 
     const forwardedProto = req.headers["x-forwarded-proto"];
     const secure = Array.isArray(forwardedProto)
@@ -85,16 +116,7 @@ export default async function handler(req: any, res: any) {
     if (secure) cookieParts.push("Secure");
     res.setHeader("Set-Cookie", cookieParts.join("; "));
 
-    let user;
-    try {
-      user = await db.getUserByOpenId(selected.openId);
-    } catch (error) {
-      console.error("[Auth] Dev login user lookup failed:", error);
-      res.status(503).json({ error: "database_unavailable" });
-      return;
-    }
-
-    res.status(200).json({ success: true, user });
+    res.status(200).json({ success: true, user: userResult.rows[0] || null });
   } catch (error) {
     console.error("[Auth] Dev login failed:", error);
     res.status(500).json({ error: "Failed to perform local login" });
