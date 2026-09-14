@@ -87,7 +87,8 @@ export default async function handler(req: any, res: any) {
             ...(((error as { errors?: Array<{ code?: unknown }> }).errors ?? []).map(item => item?.code)),
           ].filter(Boolean).map(String)
         : [];
-      res.status(503).json({ error: `database_error_${codes.join("_") || "unknown"}` });
+      const name = typeof error === "object" && error && "name" in error ? String((error as { name?: unknown }).name || "") : "";
+      res.status(503).json({ error: `database_error_${codes.join("_") || name || "unknown"}` });
       return;
     }
 
