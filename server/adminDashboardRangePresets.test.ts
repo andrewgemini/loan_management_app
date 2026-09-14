@@ -13,7 +13,9 @@ const database = vi.hoisted(() => ({
   set: vi.fn(),
   insert: vi.fn(),
   values: vi.fn(),
+  returning: vi.fn(),
   onDuplicateKeyUpdate: vi.fn(),
+  onConflictDoUpdate: vi.fn(),
   delete: vi.fn(),
 }));
 const dbMock = vi.hoisted(() => ({ getDb: vi.fn() }));
@@ -42,7 +44,12 @@ describe("admin dashboard range presets", () => {
     database.set.mockReturnValue(database);
     database.insert.mockReturnValue(database);
     database.values.mockReturnValue(database);
+    database.returning.mockResolvedValue([]);
     database.onDuplicateKeyUpdate.mockResolvedValue(undefined);
+    database.onConflictDoUpdate.mockImplementation((value) => {
+      database.onDuplicateKeyUpdate(value);
+      return Promise.resolve(undefined);
+    });
     database.delete.mockReturnValue(database);
     dbMock.getDb.mockResolvedValue(database);
   });
@@ -90,7 +97,7 @@ describe("admin dashboard range presets", () => {
     expect(database.leftJoin).toHaveBeenCalledTimes(1);
     expect(database.groupBy).toHaveBeenCalledTimes(1);
 
-    database.values.mockResolvedValueOnce([{ insertId: 3 }]);
+    database.returning.mockResolvedValueOnce([{ id: 3 }]);
     await expect(caller("admin", 41).createDashboardPresetCategory({ name: "งานติดตาม", color: "teal", icon: "flag" })).resolves.toEqual({ id: 3, name: "งานติดตาม", color: "teal", icon: "flag" });
     expect(database.values).toHaveBeenCalledWith({ userId: 41, name: "งานติดตาม", color: "teal", icon: "flag" });
     await expect(caller("admin", 41).createDashboardPresetCategory({ name: "ค่าไม่อนุญาต", color: "red" as any, icon: "flag" })).rejects.toThrow();
@@ -103,7 +110,7 @@ describe("admin dashboard range presets", () => {
     database.limit.mockResolvedValueOnce([{ id: 8 }]).mockResolvedValueOnce([{ id: 3 }]);
     await expect(caller("admin", 41).setDashboardRangePresetCategory({ presetId: 8, categoryId: 3 })).resolves.toEqual({ success: true });
     expect(database.values).toHaveBeenLastCalledWith({ userId: 41, presetId: 8, categoryId: 3 });
-    expect(database.onDuplicateKeyUpdate).toHaveBeenLastCalledWith({ set: { categoryId: 3 } });
+    expect(database.onConflictDoUpdate).toHaveBeenLastCalledWith(expect.objectContaining({ set: { categoryId: 3 } }));
 
     database.limit.mockResolvedValueOnce([{ id: 8 }]);
     await expect(caller("admin", 41).setDashboardRangePresetCategory({ presetId: 8, categoryId: null })).resolves.toEqual({ success: true });
@@ -113,14 +120,15 @@ describe("admin dashboard range presets", () => {
   it("moves multiple visible presets only into the caller's category and supports bulk unassignment", async () => {
     database.where.mockResolvedValueOnce([{ id: 8 }, { id: 9 }]).mockResolvedValueOnce([]);
     database.limit.mockResolvedValueOnce([{ id: 3 }]);
-    database.values.mockReturnValueOnce(database).mockResolvedValueOnce([{ insertId: 21 }]);
+    database.values.mockReturnValueOnce(database).mockReturnValueOnce(database);
+    database.returning.mockResolvedValueOnce([{ id: 21 }]);
     await expect(caller("admin", 41).setDashboardRangePresetCategories({ presetIds: [8, 9], categoryId: 3 })).resolves.toEqual({ success: true, count: 2, historyId: 21 });
     expect(database.values).toHaveBeenNthCalledWith(1, [{ userId: 41, presetId: 8, categoryId: 3 }, { userId: 41, presetId: 9, categoryId: 3 }]);
     expect(database.values).toHaveBeenLastCalledWith({ userId: 41, presetIds: "[8,9]", previousCategoryIds: "[null,null]", destinationCategoryId: 3 });
-    expect(database.onDuplicateKeyUpdate).toHaveBeenLastCalledWith({ set: { categoryId: 3 } });
+    expect(database.onConflictDoUpdate).toHaveBeenLastCalledWith(expect.objectContaining({ set: { categoryId: 3 } }));
 
     database.where.mockResolvedValueOnce([{ id: 8 }, { id: 9 }]).mockResolvedValueOnce([{ presetId: 8, categoryId: 3 }, { presetId: 9, categoryId: 3 }]);
-    database.values.mockResolvedValueOnce([{ insertId: 22 }]);
+    database.returning.mockResolvedValueOnce([{ id: 22 }]);
     await expect(caller("admin", 41).setDashboardRangePresetCategories({ presetIds: [8, 9], categoryId: null })).resolves.toEqual({ success: true, count: 2, historyId: 22 });
     expect(database.delete).toHaveBeenCalled();
 
@@ -160,7 +168,12 @@ describe("admin dashboard range presets", () => {
     database.set.mockReturnValue(database);
     database.insert.mockReturnValue(database);
     database.values.mockReturnValue(database);
+    database.returning.mockResolvedValue([]);
     database.onDuplicateKeyUpdate.mockResolvedValue(undefined);
+    database.onConflictDoUpdate.mockImplementation((value) => {
+      database.onDuplicateKeyUpdate(value);
+      return Promise.resolve(undefined);
+    });
     database.delete.mockReturnValue(database);
     await expect(caller("admin", 41).undoDashboardPresetCategoryMove({ id: 21 })).rejects.toThrow("เฉพาะการย้าย Preset ล่าสุด");
   });
@@ -183,7 +196,7 @@ describe("admin dashboard range presets", () => {
 
   it("copies only a visible shared team preset into a new private owner row", async () => {
     database.limit.mockResolvedValueOnce([{ id: 8, name: "รอบทีม", startDate: "2026-08-01", endDate: "2026-08-31", isShared: true }]).mockResolvedValueOnce([]);
-    database.values.mockResolvedValueOnce([{ insertId: 73 }]);
+    database.returning.mockResolvedValueOnce([{ id: 73 }]);
 
     await expect(caller("admin", 41).copyDashboardRangePresetToPrivate({ id: 8 })).resolves.toEqual({ id: 73, name: "รอบทีม · สำเนา" });
     expect(database.values).toHaveBeenCalledWith(expect.objectContaining({ userId: 41, name: "รอบทีม · สำเนา", isShared: false }));
@@ -193,7 +206,7 @@ describe("admin dashboard range presets", () => {
     database.limit.mockResolvedValueOnce([{ id: 8 }]);
     await expect(caller("admin", 41).markDashboardRangePresetUsed({ id: 8 })).resolves.toEqual({ success: true });
     expect(database.values).toHaveBeenCalledWith(expect.objectContaining({ userId: 41, presetId: 8, lastUsedAt: expect.any(Date) }));
-    expect(database.onDuplicateKeyUpdate).toHaveBeenCalledWith({ set: expect.objectContaining({ lastUsedAt: expect.any(Date), usageCount: expect.anything() }) });
+    expect(database.onConflictDoUpdate).toHaveBeenCalledWith(expect.objectContaining({ set: expect.objectContaining({ lastUsedAt: expect.any(Date), usageCount: expect.anything() }) }));
   });
 
   it("lists only the caller's recent visible presets with safe creator metadata", async () => {
@@ -208,7 +221,7 @@ describe("admin dashboard range presets", () => {
     database.limit.mockResolvedValueOnce([{ id: 8 }]);
     await expect(caller("admin", 41).setDashboardRangePresetPin({ id: 8, isPinned: true })).resolves.toEqual({ success: true });
     expect(database.values).toHaveBeenCalledWith(expect.objectContaining({ userId: 41, presetId: 8, pinnedAt: expect.any(Date) }));
-    expect(database.onDuplicateKeyUpdate).toHaveBeenCalledWith({ set: { pinnedAt: expect.any(Date) } });
+    expect(database.onConflictDoUpdate).toHaveBeenCalledWith(expect.objectContaining({ set: { pinnedAt: expect.any(Date) } }));
 
     database.limit.mockResolvedValueOnce([{ id: 8 }]);
     await expect(caller("admin", 41).setDashboardRangePresetPin({ id: 8, isPinned: false })).resolves.toEqual({ success: true });

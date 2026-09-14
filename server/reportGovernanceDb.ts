@@ -179,8 +179,8 @@ export async function requestHighSensitivityExport(input: ExportApprovalInput) {
     rowCount: input.rowCount,
     filterSummary: input.filterSummary,
     expiresAt,
-  });
-  const requestId = Number(result[0].insertId);
+  }).returning({ id: reportExportApprovalRequests.id });
+  const requestId = result[0]?.id ?? 0;
   await createSecurityEvent({
     actorId: input.userId,
     approvalRequestId: requestId,

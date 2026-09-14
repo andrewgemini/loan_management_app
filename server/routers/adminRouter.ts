@@ -61,7 +61,7 @@ export const adminRouter = router({
   saveDashboardPreferences: protectedProcedure.input(dashboardTrendInput.refine((value) => Boolean(value.startDate && value.endDate), { message: "ต้องมี Custom Date Range ก่อนบันทึกเป็นค่าเริ่มต้น", path: ["startDate"] })).mutation(async ({ ctx, input }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-    await db.insert(userDashboardPreferences).values({ userId: ctx.user.id, customRangeStartDate: input.startDate!, customRangeEndDate: input.endDate!, comparisonMode: input.comparisonMode }).onDuplicateKeyUpdate({ set: { customRangeStartDate: input.startDate!, customRangeEndDate: input.endDate!, comparisonMode: input.comparisonMode } });
+    await db.insert(userDashboardPreferences).values({ userId: ctx.user.id, customRangeStartDate: input.startDate!, customRangeEndDate: input.endDate!, comparisonMode: input.comparisonMode }).onConflictDoUpdate({ target: userDashboardPreferences.userId, set: { customRangeStartDate: input.startDate!, customRangeEndDate: input.endDate!, comparisonMode: input.comparisonMode } });
     return { success: true };
   }),
 
@@ -121,8 +121,8 @@ export const adminRouter = router({
     if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "เฉพาะผู้ดูแลระบบเท่านั้นที่สร้างหมวดหมู่ Preset ได้" });
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
-    const result = await db.insert(userDashboardPresetCategories).values({ userId: ctx.user.id, name: input.name, color: input.color, icon: input.icon });
-    return { id: Number(result[0].insertId), name: input.name, color: input.color, icon: input.icon };
+    const result = await db.insert(userDashboardPresetCategories).values({ userId: ctx.user.id, name: input.name, color: input.color, icon: input.icon }).returning({ id: userDashboardPresetCategories.id });
+    return { id: result[0]?.id ?? 0, name: input.name, color: input.color, icon: input.icon };
   }),
 
   updateDashboardPresetCategoryAppearance: protectedProcedure.input(z.object({ id: z.number().int().positive() }).merge(dashboardPresetCategoryAppearanceInput)).mutation(async ({ ctx, input }) => {
@@ -162,7 +162,7 @@ export const adminRouter = router({
     }
     const [category] = await db.select({ id: userDashboardPresetCategories.id }).from(userDashboardPresetCategories).where(and(eq(userDashboardPresetCategories.id, input.categoryId), eq(userDashboardPresetCategories.userId, ctx.user.id))).limit(1);
     if (!category) throw new TRPCError({ code: "NOT_FOUND", message: "ไม่พบหมวดหมู่ Preset" });
-    await db.insert(userDashboardPresetCategoryAssignments).values({ userId: ctx.user.id, presetId: input.presetId, categoryId: input.categoryId }).onDuplicateKeyUpdate({ set: { categoryId: input.categoryId } });
+    await db.insert(userDashboardPresetCategoryAssignments).values({ userId: ctx.user.id, presetId: input.presetId, categoryId: input.categoryId }).onConflictDoUpdate({ target: [userDashboardPresetCategoryAssignments.userId, userDashboardPresetCategoryAssignments.presetId], set: { categoryId: input.categoryId } });
     return { success: true };
   }),
 
@@ -181,11 +181,11 @@ export const adminRouter = router({
     } else {
       const [category] = await db.select({ id: userDashboardPresetCategories.id }).from(userDashboardPresetCategories).where(and(eq(userDashboardPresetCategories.id, input.categoryId), eq(userDashboardPresetCategories.userId, ctx.user.id))).limit(1);
       if (!category) throw new TRPCError({ code: "NOT_FOUND", message: "ไม่พบหมวดหมู่ Preset" });
-      await db.insert(userDashboardPresetCategoryAssignments).values(input.presetIds.map((presetId) => ({ userId: ctx.user.id, presetId, categoryId: input.categoryId! }))).onDuplicateKeyUpdate({ set: { categoryId: input.categoryId } });
+      await db.insert(userDashboardPresetCategoryAssignments).values(input.presetIds.map((presetId) => ({ userId: ctx.user.id, presetId, categoryId: input.categoryId! }))).onConflictDoUpdate({ target: [userDashboardPresetCategoryAssignments.userId, userDashboardPresetCategoryAssignments.presetId], set: { categoryId: input.categoryId } });
     }
     if (!changed) return { success: true, count: input.presetIds.length, historyId: null };
-    const result = await db.insert(userDashboardPresetCategoryMoveHistory).values({ userId: ctx.user.id, presetIds: JSON.stringify(input.presetIds), previousCategoryIds: JSON.stringify(previousCategoryIds), destinationCategoryId: input.categoryId });
-    return { success: true, count: input.presetIds.length, historyId: Number(result[0].insertId) };
+    const result = await db.insert(userDashboardPresetCategoryMoveHistory).values({ userId: ctx.user.id, presetIds: JSON.stringify(input.presetIds), previousCategoryIds: JSON.stringify(previousCategoryIds), destinationCategoryId: input.categoryId }).returning({ id: userDashboardPresetCategoryMoveHistory.id });
+    return { success: true, count: input.presetIds.length, historyId: result[0]?.id ?? 0 };
   }),
 
   listDashboardPresetCategoryMoveHistory: protectedProcedure.query(async ({ ctx }) => {
@@ -221,7 +221,7 @@ export const adminRouter = router({
     const unassignedIds = assignments.filter((assignment) => assignment.categoryId === null).map((assignment) => assignment.presetId);
     const assignedRows = assignments.filter((assignment): assignment is { presetId: number; categoryId: number } => assignment.categoryId !== null).map((assignment) => ({ userId: ctx.user.id, presetId: assignment.presetId, categoryId: assignment.categoryId }));
     if (unassignedIds.length > 0) await db.delete(userDashboardPresetCategoryAssignments).where(and(eq(userDashboardPresetCategoryAssignments.userId, ctx.user.id), inArray(userDashboardPresetCategoryAssignments.presetId, unassignedIds)));
-    if (assignedRows.length > 0) await db.insert(userDashboardPresetCategoryAssignments).values(assignedRows).onDuplicateKeyUpdate({ set: { categoryId: sql`values(${userDashboardPresetCategoryAssignments.categoryId})` } });
+    if (assignedRows.length > 0) await db.insert(userDashboardPresetCategoryAssignments).values(assignedRows).onConflictDoUpdate({ target: [userDashboardPresetCategoryAssignments.userId, userDashboardPresetCategoryAssignments.presetId], set: { categoryId: sql`excluded.category_id` } });
     await db.update(userDashboardPresetCategoryMoveHistory).set({ undoneAt: new Date() }).where(and(eq(userDashboardPresetCategoryMoveHistory.id, input.id), eq(userDashboardPresetCategoryMoveHistory.userId, ctx.user.id), isNull(userDashboardPresetCategoryMoveHistory.undoneAt)));
     return { success: true, count: presetIds.length };
   }),
@@ -243,7 +243,7 @@ export const adminRouter = router({
     } else {
       const [category] = await db.select({ id: userDashboardPresetCategories.id }).from(userDashboardPresetCategories).where(and(eq(userDashboardPresetCategories.id, history.destinationCategoryId), eq(userDashboardPresetCategories.userId, ctx.user.id))).limit(1);
       if (!category) throw new TRPCError({ code: "NOT_FOUND", message: "ไม่พบโฟลเดอร์ปลายทางสำหรับทำซ้ำการย้าย" });
-      await db.insert(userDashboardPresetCategoryAssignments).values((presetIds as number[]).map((presetId) => ({ userId: ctx.user.id, presetId, categoryId: history.destinationCategoryId! }))).onDuplicateKeyUpdate({ set: { categoryId: history.destinationCategoryId } });
+      await db.insert(userDashboardPresetCategoryAssignments).values((presetIds as number[]).map((presetId) => ({ userId: ctx.user.id, presetId, categoryId: history.destinationCategoryId! }))).onConflictDoUpdate({ target: [userDashboardPresetCategoryAssignments.userId, userDashboardPresetCategoryAssignments.presetId], set: { categoryId: history.destinationCategoryId } });
     }
     await db.update(userDashboardPresetCategoryMoveHistory).set({ undoneAt: null }).where(and(eq(userDashboardPresetCategoryMoveHistory.id, input.id), eq(userDashboardPresetCategoryMoveHistory.userId, ctx.user.id), isNotNull(userDashboardPresetCategoryMoveHistory.undoneAt)));
     return { success: true, count: presetIds.length };
@@ -263,8 +263,8 @@ export const adminRouter = router({
       await db.update(userDashboardRangePresets).set({ startDate: input.startDate, endDate: input.endDate, isShared: input.isShared, updatedAt: new Date() }).where(eq(userDashboardRangePresets.id, existing.id));
       return { id: existing.id, updated: true };
     }
-    const result = await db.insert(userDashboardRangePresets).values({ userId: ctx.user.id, ...input });
-    return { id: Number(result[0].insertId), updated: false };
+    const result = await db.insert(userDashboardRangePresets).values({ userId: ctx.user.id, ...input }).returning({ id: userDashboardRangePresets.id });
+    return { id: result[0]?.id ?? 0, updated: false };
   }),
 
   deleteDashboardRangePreset: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
@@ -291,7 +291,7 @@ export const adminRouter = router({
     if (!preset) throw new TRPCError({ code: "NOT_FOUND", message: "ไม่พบ Preset ที่ปักหมุดได้" });
     if (input.isPinned) {
       const pinnedAt = new Date();
-      await db.insert(userDashboardPresetPins).values({ userId: ctx.user.id, presetId: preset.id, pinnedAt }).onDuplicateKeyUpdate({ set: { pinnedAt } });
+      await db.insert(userDashboardPresetPins).values({ userId: ctx.user.id, presetId: preset.id, pinnedAt }).onConflictDoUpdate({ target: [userDashboardPresetPins.userId, userDashboardPresetPins.presetId], set: { pinnedAt } });
     } else {
       await db.delete(userDashboardPresetPins).where(and(eq(userDashboardPresetPins.userId, ctx.user.id), eq(userDashboardPresetPins.presetId, preset.id)));
     }
@@ -355,8 +355,8 @@ export const adminRouter = router({
       copyName = `${baseName.slice(0, Math.max(1, 80 - String(suffix).length - 1))} ${suffix}`;
     }
 
-    const result = await db.insert(userDashboardRangePresets).values({ userId: ctx.user.id, name: copyName, startDate: source.startDate, endDate: source.endDate, isShared: false });
-    return { id: Number(result[0].insertId), name: copyName };
+    const result = await db.insert(userDashboardRangePresets).values({ userId: ctx.user.id, name: copyName, startDate: source.startDate, endDate: source.endDate, isShared: false }).returning({ id: userDashboardRangePresets.id });
+    return { id: result[0]?.id ?? 0, name: copyName };
   }),
 
   markDashboardRangePresetUsed: protectedProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
@@ -366,7 +366,7 @@ export const adminRouter = router({
     const [preset] = await db.select({ id: userDashboardRangePresets.id }).from(userDashboardRangePresets).where(and(eq(userDashboardRangePresets.id, input.id), or(eq(userDashboardRangePresets.userId, ctx.user.id), eq(userDashboardRangePresets.isShared, true)))).limit(1);
     if (!preset) throw new TRPCError({ code: "NOT_FOUND", message: "ไม่พบ Preset ที่ใช้งานได้" });
     const lastUsedAt = new Date();
-    await db.insert(userDashboardPresetRecentUses).values({ userId: ctx.user.id, presetId: preset.id, lastUsedAt, usageCount: 1 }).onDuplicateKeyUpdate({ set: { lastUsedAt, usageCount: sql`${userDashboardPresetRecentUses.usageCount} + 1` } });
+    await db.insert(userDashboardPresetRecentUses).values({ userId: ctx.user.id, presetId: preset.id, lastUsedAt, usageCount: 1 }).onConflictDoUpdate({ target: [userDashboardPresetRecentUses.userId, userDashboardPresetRecentUses.presetId], set: { lastUsedAt, usageCount: sql`${userDashboardPresetRecentUses.usageCount} + 1` } });
     return { success: true };
   }),
 

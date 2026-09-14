@@ -1,5 +1,6 @@
 import { eq, and, desc, sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 import { InsertUser, users, loanRequests, loans, amortizationSchedules, loanPayments, notifications, activityHistoryFilterPresets } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -9,7 +10,8 @@ let _db: ReturnType<typeof drizzle> | null = null;
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+      _db = drizzle(pool);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -68,7 +70,8 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       updateSet.lastSignedIn = new Date();
     }
 
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
+    await db.insert(users).values(values).onConflictDoUpdate({
+      target: users.openId,
       set: updateSet,
     });
   } catch (error) {
@@ -124,8 +127,8 @@ export async function saveActivityHistoryFilterPreset(userId: number, data: {
     await db.update(activityHistoryFilterPresets).set({ ...data, updatedAt: new Date() }).where(eq(activityHistoryFilterPresets.id, existing[0].id));
     return existing[0].id;
   }
-  const result = await db.insert(activityHistoryFilterPresets).values({ userId, ...data });
-  return Number(result[0].insertId);
+  const result = await db.insert(activityHistoryFilterPresets).values({ userId, ...data }).returning({ id: activityHistoryFilterPresets.id });
+  return result[0]?.id ?? 0;
 }
 
 export async function deleteActivityHistoryFilterPreset(userId: number, id: number) {
@@ -216,8 +219,8 @@ export async function createLoan(data: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   
-  const result = await db.insert(loans).values(data);
-  return result;
+  const result = await db.insert(loans).values(data).returning({ id: loans.id });
+  return { insertId: result[0]?.id ?? 0 };
 }
 
 export async function getLoanById(id: number) {
