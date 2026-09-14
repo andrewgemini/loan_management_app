@@ -59,8 +59,12 @@ export default function Home() {
       if (res.ok) {
         toast.success(`เข้าสู่ระบบในฐานะ ${role} สำเร็จ`);
         window.location.href = role === "admin" ? "/admin" : "/dashboard";
+      } else if (res.status === 401 || res.status === 403) {
+        toast.error("Production ยังป้องกันการเข้าถึงอยู่ กรุณาตรวจสอบ Vercel Deployment Protection");
+      } else if (res.status >= 500) {
+        toast.error("เซิร์ฟเวอร์เข้าสู่ระบบไม่พร้อมใช้งาน โปรดตรวจสอบ DATABASE_URL / Supabase");
       } else {
-        toast.error("เข้าสู่ระบบไม่สำเร็จ โปรดตรวจสอบการเชื่อมต่อฐานข้อมูล");
+        toast.error(`เข้าสู่ระบบไม่สำเร็จ (HTTP ${res.status})`);
       }
     } catch (err) {
       console.error(err);
