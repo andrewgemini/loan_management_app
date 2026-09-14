@@ -331,11 +331,16 @@ async function getDb() {
     throw new Error("PostgreSQL connection URL is not configured");
   }
   try {
+    const runtimeConnectionString = connectionString
+      .replace(/([?&])sslmode=[^&]*/i, "$1")
+      .replace(/([?&])channel_binding=[^&]*/i, "$1")
+      .replace(/[?&]$/, "");
     _pool = new Pool({
-      connectionString,
+      connectionString: runtimeConnectionString,
       max: 5,
       connectionTimeoutMillis: 1e4,
       idleTimeoutMillis: 3e4,
+      family: 4,
       ssl: { rejectUnauthorized: false }
     });
     _db = drizzle(_pool);

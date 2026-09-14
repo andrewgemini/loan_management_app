@@ -23,13 +23,18 @@ export async function getDb() {
   }
 
   try {
+    const runtimeConnectionString = connectionString
+      .replace(/([?&])sslmode=[^&]*/i, "$1")
+      .replace(/([?&])channel_binding=[^&]*/i, "$1")
+      .replace(/[?&]$/, "");
     _pool = new Pool({
-      connectionString,
+      connectionString: runtimeConnectionString,
       max: 5,
       connectionTimeoutMillis: 10_000,
       idleTimeoutMillis: 30_000,
+      family: 4,
       ssl: { rejectUnauthorized: false },
-    });
+    } as any);
     _db = drizzle(_pool);
     return _db;
   } catch (error) {
