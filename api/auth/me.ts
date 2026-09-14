@@ -65,6 +65,7 @@ export default async function handler(req: any, res: any) {
       max: 1,
       connectionTimeoutMillis: 10_000,
       idleTimeoutMillis: 10_000,
+      ssl: { rejectUnauthorized: false },
     });
     const result = await pool.query(
       `SELECT "id", "openId", "name", "email", "avatar_url", "loginMethod", "role", "createdAt", "updatedAt", "lastSignedIn"

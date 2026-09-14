@@ -14,9 +14,9 @@ export async function getDb() {
 
   const connectionString = (
     process.env.DATABASE_URL
+    ?? process.env.POSTGRES_URL_NON_POOLING
     ?? process.env.POSTGRES_URL
     ?? process.env.POSTGRES_PRISMA_URL
-    ?? process.env.POSTGRES_URL_NON_POOLING
   )?.trim();
   if (!connectionString) {
     throw new Error("PostgreSQL connection URL is not configured");
@@ -28,6 +28,7 @@ export async function getDb() {
       max: 5,
       connectionTimeoutMillis: 10_000,
       idleTimeoutMillis: 30_000,
+      ssl: { rejectUnauthorized: false },
     });
     _db = drizzle(_pool);
     return _db;

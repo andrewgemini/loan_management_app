@@ -65,7 +65,7 @@ export default async function handler(req: any, res: any) {
       max: 1,
       connectionTimeoutMillis: 10_000,
       idleTimeoutMillis: 10_000,
-      family: 4,
+      ssl: { rejectUnauthorized: false },
     });
 
     try {
