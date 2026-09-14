@@ -11,6 +11,7 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "demo:seed": "ALLOW_DEMO_SEED=true node scripts/seed-demo.mjs",
+    "uat:seed": "ALLOW_UAT_SEED=true node scripts/seed-uat.mjs",
     "db:push": "drizzle-kit generate && drizzle-kit migrate"
   },
   "dependencies": {
