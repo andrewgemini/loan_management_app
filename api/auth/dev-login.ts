@@ -137,7 +137,7 @@ export default async function handler(req: any, res: any) {
     const issuedAt = Date.now();
     const payload = {
       openId: selected.openId,
-      appId: process.env.VITE_APP_ID || "",
+      appId: process.env.VITE_APP_ID?.trim() || "loan-management-app",
       name: selected.name || "",
       exp: Math.floor((issuedAt + ONE_YEAR_MS) / 1000),
     };

@@ -5,7 +5,7 @@ const databaseUrl = process.env.DATABASE_URL
   ?? "";
 
 export const ENV = {
-  appId: process.env.VITE_APP_ID ?? "",
+  appId: process.env.VITE_APP_ID?.trim() || "loan-management-app",
   // Explicit JWT_SECRET wins; legacy deployments may derive it from the effective Postgres URL.
   cookieSecret: process.env.JWT_SECRET ?? (databaseUrl ? `db:${databaseUrl}` : ""),
   databaseUrl,
