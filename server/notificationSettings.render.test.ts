@@ -23,6 +23,14 @@ const state = vi.hoisted(() => ({
   toastError: vi.fn(),
 }));
 
+vi.mock("@/components/DashboardLayout", () => ({
+  default: ({ children }: { children: React.ReactNode }) => React.createElement(React.Fragment, null, children),
+}));
+
+vi.mock("wouter", () => ({
+  useLocation: () => ["/settings/notifications", vi.fn()],
+}));
+
 vi.mock("@/components/ui/card", () => {
   const Section = ({ children, className }: { children: React.ReactNode; className?: string }) =>
     React.createElement("section", { className }, children);
