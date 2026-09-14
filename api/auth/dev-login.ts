@@ -1,7 +1,5 @@
-import { serialize } from "cookie";
-import * as db from "../../server/db";
-import { COOKIE_NAME, ONE_YEAR_MS } from "../../shared/const";
-import { sdk } from "../../server/_core/sdk";
+const COOKIE_NAME = "app_session_id";
+const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 
 const demoUsers = {
   admin: {
@@ -31,6 +29,10 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
+    const [db, { sdk }] = await Promise.all([
+      import("../../server/db"),
+      import("../../server/_core/sdk"),
+    ]);
     const body = req.body || {};
     const role = body.role || "borrower";
     const selected = body.openId && role
@@ -60,16 +62,15 @@ export default async function handler(req: any, res: any) {
       ? forwardedProto.some((value: string) => value.trim().toLowerCase() === "https")
       : String(forwardedProto || "").split(",").some(value => value.trim().toLowerCase() === "https");
 
-    res.setHeader(
-      "Set-Cookie",
-      serialize(COOKIE_NAME, sessionToken, {
-        httpOnly: true,
-        path: "/",
-        sameSite: "none",
-        secure,
-        maxAge: Math.floor(ONE_YEAR_MS / 1000),
-      })
-    );
+    const cookieParts = [
+      `${COOKIE_NAME}=${encodeURIComponent(sessionToken)}`,
+      "Path=/",
+      "HttpOnly",
+      "SameSite=None",
+      `Max-Age=${Math.floor(ONE_YEAR_MS / 1000)}`,
+    ];
+    if (secure) cookieParts.push("Secure");
+    res.setHeader("Set-Cookie", cookieParts.join("; "));
 
     const user = await db.getUserByOpenId(selected.openId);
     res.status(200).json({ success: true, user });
