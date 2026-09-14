@@ -264,7 +264,9 @@ function DashboardLayoutContent({
           <SidebarContent className="gap-0">
             <SidebarMenu className="px-2 py-1">
               {visibleMenuItems.map(item => {
-                const isActive = location === item.path;
+                const isActive = item.path === "/dashboard?section=settings"
+                  ? location === item.path || location.startsWith("/dashboard?section=settings")
+                  : location === item.path;
                 return (
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton

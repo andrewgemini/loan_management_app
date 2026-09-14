@@ -1,12 +1,11 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import { lazy, Suspense } from "react";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
-import NotificationSettings from "./pages/NotificationSettings";
 import Dashboard from "./pages/Dashboard";
 import CreateLoanRequest from "./pages/CreateLoanRequest";
 
@@ -17,6 +16,14 @@ const AdminActivityHistory = lazy(() => import("./pages/AdminActivityHistory"));
 const AdminAuditLogs = lazy(() => import("./pages/AdminAuditLogs"));
 const ReportGovernance = lazy(() => import("./pages/ReportGovernance"));
 const ProfileSettings = lazy(() => import("./pages/ProfileSettings"));
+
+function NotificationSettingsRedirect() {
+  const [, navigate] = useLocation();
+  useEffect(() => {
+    navigate("/dashboard?section=settings", { replace: true });
+  }, [navigate]);
+  return <RouteLoadingFallback />;
+}
 
 function RouteLoadingFallback() {
   return (
@@ -40,7 +47,8 @@ function Router() {
       <Route path="/admin/activity-history" component={AdminActivityHistory} />
       <Route path="/admin/audit-logs" component={AdminAuditLogs} />
       <Route path="/admin/report-governance" component={ReportGovernance} />
-      <Route path="/settings/notifications" component={NotificationSettings} />
+      {/* Legacy URL redirects into the main dashboard settings section. */}
+      <Route path="/settings/notifications" component={NotificationSettingsRedirect} />
       <Route path="/profile" component={ProfileSettings} />
       <Route path="/404" component={NotFound} />
       {/* Final fallback route */}
