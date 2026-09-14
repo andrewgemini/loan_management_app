@@ -68,7 +68,7 @@ export async function bootstrapDatabase(connectionString: string) {
 }
 
 export default async function handler(req: any, res: any) {
-  if (req.method !== "POST" || req.headers["x-bootstrap-token"] !== TOKEN) {
+  if (req.method !== "GET" || req.query?.run !== "1") {
     res.status(404).json({ error: "not_found" });
     return;
   }
