@@ -25,21 +25,28 @@ export function useAuth(options?: UseAuthOptions) {
   });
 
   const logout = useCallback(async () => {
+    let shouldRedirect = false;
     try {
       await logoutMutation.mutateAsync();
+      shouldRedirect = true;
     } catch (error: unknown) {
       if (
         error instanceof TRPCClientError &&
         error.data?.code === "UNAUTHORIZED"
       ) {
-        return;
+        shouldRedirect = true;
+      } else {
+        throw error;
       }
-      throw error;
     } finally {
       utils.auth.me.setData(undefined, null);
       await utils.auth.me.invalidate();
+
+      if (shouldRedirect && typeof window !== "undefined") {
+        window.location.replace(redirectPath);
+      }
     }
-  }, [logoutMutation, utils]);
+  }, [logoutMutation, redirectPath, utils]);
 
   const state = useMemo(() => {
     localStorage.setItem(
